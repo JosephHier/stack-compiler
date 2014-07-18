@@ -27,22 +27,12 @@ CodeWriter.prototype.writePushPop = function writePushPop (command, segment,
   case 'that':
     this._writeSegmentAddressToD(segment, index);
     if (command === CommandType.C_PUSH) {
-      this._outStream.writeLines([
-        'A=D',
-        'D=M'
-      ]);
-      this._writePushD();
+      this._writeMoveHeadToD();
+      this._writePushDToStack();
     } else {
-      this._outStream.writeLines([
-        '@13',
-        'M=D'
-      ]);
-      this._writePopD();
-      this._outStream.writeLines([
-        '@13',
-        'A=M',
-        'M=D'
-      ]);
+      this._writeStashD();
+      this._writePopStackToD();
+      this._writeRestoreD();
     }
     break;
   }
@@ -50,7 +40,7 @@ CodeWriter.prototype.writePushPop = function writePushPop (command, segment,
 
 CodeWriter.prototype.close = function close () {};
 
-CodeWriter.prototype._writePushD = function _writePushD () {
+CodeWriter.prototype._writePushDToStack = function _writePushDToStack () {
   this._outStream.writeLine([
     '@SP',
     'A=M',
@@ -60,12 +50,34 @@ CodeWriter.prototype._writePushD = function _writePushD () {
   ]);
 };
 
-CodeWriter.prototype._writePopD = function _writePopD () {
+CodeWriter.prototype._writePopStackToD = function _writePopStackToD () {
   this._outStream.writeLines([
     '@SP',
     'M=M-1',
     'A=M',
     'D=M'
+  ]);
+};
+
+CodeWriter.prototype._writeMoveHeadToD = function _writeMoveHeadToD () {
+  this._outStream.writeLines([
+    'A=D',
+    'D=M'
+  ]);
+};
+
+CodeWriter.prototype._writeStashD = function _writeStashD () {
+  this._outStream.writeLines([
+    '@13',
+    'M=D'
+  ]);
+};
+
+CodeWriter.prototype._writeRestoreD = function _writeRestoreD () {
+  this._outStream.writeLines([
+    '@13',
+    'A=M',
+    'M=D'
   ]);
 };
 
