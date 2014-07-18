@@ -5,7 +5,7 @@ function Stream (str) {
 
 Stream.prototype.get = function get () {
 	return this.str.charAt(this.index++);
-}; 
+};
 
 Stream.prototype.peek = function peek () {
 	return this.str.charAt(this.index);
