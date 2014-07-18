@@ -1,0 +1,16 @@
+{
+  "name": "stack-compiler",
+  "version": "0.0.0",
+  "authors": [
+    "Joseph Hier <yosephhier@gmail.com>"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
