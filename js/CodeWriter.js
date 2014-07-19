@@ -26,22 +26,41 @@ CodeWriter.prototype.writePushPop = function writePushPop (command, segment,
   case 'this':
   case 'that':
     this._writeSegmentAddressToD(segment, index);
-    if (command === CommandType.C_PUSH) {
-      this._writeMoveHeadToD();
-      this._writePushDToStack();
-    } else {
-      this._writeStashD();
-      this._writePopStackToD();
-      this._writeRestoreD();
-    }
     break;
+  case 'static':
+    this._writeStaticAddressToD(index);
+    break;
+  case 'constant':
+    if (command === CommandType.C_POP) {
+      throw new Error('Cannot pop to constant');
+    }
+    this._writePushConstantToStack(index);
+    return;
+  case 'pointer':
+    this._writePointerAddressToD(index);
+    break;
+  case 'temp':
+    this._writeTempAddressToD(index);
+    break;
+  default:
+    throw new Error('Invalid segment');
+  }
+
+  if (command === CommandType.C_PUSH) {
+    this._writeMoveHeadToD();
+    this._writeMemoryToD();
+    this._writePushDToStack();
+  } else {
+    this._writeStashD(13);
+    this._writePopStackToD();
+    this._writeRestoreD(13);
   }
 };
 
 CodeWriter.prototype.close = function close () {};
 
 CodeWriter.prototype._writePushDToStack = function _writePushDToStack () {
-  this._outStream.writeLine([
+  this._outStream.writeLines([
     '@SP',
     'A=M',
     'M=D',
@@ -60,22 +79,23 @@ CodeWriter.prototype._writePopStackToD = function _writePopStackToD () {
 };
 
 CodeWriter.prototype._writeMoveHeadToD = function _writeMoveHeadToD () {
-  this._outStream.writeLines([
-    'A=D',
-    'D=M'
-  ]);
+  this._outStream.writeLine('A=D');
 };
 
-CodeWriter.prototype._writeStashD = function _writeStashD () {
+CodeWriter.prototype._writeMemoryToD = function _writeMemoryToD () {
+  this._outStream.writeLine('D=M');
+};
+
+CodeWriter.prototype._writeStashD = function _writeStashD (address) {
   this._outStream.writeLines([
-    '@13',
+    '@' + address,
     'M=D'
   ]);
 };
 
-CodeWriter.prototype._writeRestoreD = function _writeRestoreD () {
+CodeWriter.prototype._writeRestoreD = function _writeRestoreD (address) {
   this._outStream.writeLines([
-    '@13',
+    '@' + address,
     'A=M',
     'M=D'
   ]);
@@ -95,9 +115,62 @@ CodeWriter.prototype._writeSegmentAddressToD =
   }
 };
 
+CodeWriter.prototype._writePushConstantToStack =
+    function _writePushConstantToStack (number) {
+  this._outStream.writeLines([
+    '@' + number,
+    'D=A'
+  ]);
+  this._writePushDToStack();
+};
+
+CodeWriter.prototype._writeStaticAddressToD =
+    function _writeStaticAddressToD (index) {
+  var label = this._fileName + '.' + index;
+  this._outStream.writeLines([
+    '@' + label,
+    'D=A'
+  ]);
+};
+
+CodeWriter.prototype._writePointerAddressToD =
+    function _writePointerAddressToD (index) {
+  if (index === 0) {
+    this._outStream.writeLines([
+      '@THIS',
+      'D=A'
+    ]);
+  } else if (index === 1) {
+    this._outStream.writeLines([
+      '@THAT',
+      'D=A'
+    ]);
+  } else {
+    throw new Error('Invalid index for pointer segment: ' + index);
+  }
+};
+
+CodeWriter.prototype._writeTempAddressToD =
+    function _writeTempAddressToD (index) {
+  if (index < 0 || index > 7) {
+    throw new Error('Invalid index for temp segment: ' + index);
+  }
+
+  this._outStream.writeLines([
+    '@' + 5 + index,
+    'D=A'
+  ]);
+};
+
 CodeWriter.prototype._writeAdd = function _writeAdd () {
-  this.writePushPop(CommandType.C_POP, 'temp', 0);
-  // TODO
+  this._writePopStackToD();
+  this._writeStashD(14);
+  this._writePopStackToD();
+  this._outStream.writeLines([
+    '@14',
+    'D=D+M'
+  ]);
+  this._writePushDToStack();
 };
 
 CodeWriter.prototype._segmentLabel = function _segmentLabel (segment) {

@@ -14,4 +14,8 @@ OutputStream.prototype.writeLines = function writeLine (strArr) {
   this._contents += strArr.join('\n') + '\n';
 };
 
+OutputStream.prototype.getContents = function getContents () {
+  return this._contents;
+};
+
 module.exports = OutputStream;

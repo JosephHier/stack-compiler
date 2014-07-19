@@ -52,7 +52,7 @@ Parser.prototype.commandType = function commandType () {
   case 'or':
   case 'not':
     return CommandType.C_ARITHMETIC;
-  default: 
+  default:
     throw new Error('Invalid command');
   }
 };
