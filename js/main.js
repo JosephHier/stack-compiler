@@ -7,12 +7,16 @@ var OutputStream = require('./OutputStream.js');
 var inStream = new InputStream([
   'push constant 3',
   'push constant 2',
-  'add'
+  'gt',
+  'pop static 0',
+  'push static 0',
+  'not'
 ].join('\n'));
+
+var parser = new Parser(inStream);
 var asmFile = new OutputStream();
 var codeWriter = new CodeWriter(asmFile);
 codeWriter.setFileName('test');
-var parser = new Parser(inStream);
 
 while (parser.hasMoreCommands()) {
   parser.advance();
@@ -20,9 +24,15 @@ while (parser.hasMoreCommands()) {
   var commandType = parser.commandType();
   if (commandType === CommandType.C_PUSH || commandType === CommandType.C_POP) {
     codeWriter.writePushPop(commandType, parser.arg1(), parser.arg2());
+  } else if (commandType === CommandType.C_ARITHMETIC) {
+    codeWriter.writeArithmetic(parser.arg1());
   } else {
-    codeWriter.writeArithmetic(commandType);
+    throw new Error('Invalid command type');
   }
 }
 
-console.log(asmFile.getContents());
+$(function() {
+  $('<p>', {
+    html: asmFile.getContents().split('\n').join('<br />')
+  }).appendTo('body');
+});

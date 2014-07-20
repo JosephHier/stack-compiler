@@ -3,6 +3,7 @@ var CommandType = require('./CommandType.js');
 function CodeWriter (outStream) {
   this._outStream = outStream;
   this._fileName = null;
+  this._label = 0;
 }
 
 CodeWriter.prototype.setFileName = function setFileName (fileName) {
@@ -12,9 +13,34 @@ CodeWriter.prototype.setFileName = function setFileName (fileName) {
 CodeWriter.prototype.writeArithmetic = function writeArithmetic (command) {
   switch (command) {
   case 'add':
-    this._writeAdd();
+    this._writeBinaryOp('+');
     break;
-  // TODO
+  case 'sub':
+    this._writeBinaryOp('-');
+    break;
+  case 'and':
+    this._writeBinaryOp('&');
+    break;
+  case 'or':
+    this._writeBinaryOp('|');
+    break;
+  case 'eq':
+    this._writeBooleanOp('EQ');
+    break;
+  case 'gt':
+    this._writeBooleanOp('GT');
+    break;
+  case 'lt':
+    this._writeBooleanOp('LT');
+    break;
+  case 'neg':
+    this._writeUnaryOp('-');
+    break;
+  case 'not':
+    this._writeUnaryOp('!');
+    break;
+  default:
+    throw new Error('Invalid arithmetic command');
   }
 };
 
@@ -108,7 +134,7 @@ CodeWriter.prototype._writeSegmentAddressToD =
   if (index === 0) {
     this._outStream.writeLine('D=M');
   } else {
-    this._outStream.writeLine([
+    this._outStream.writeLines([
       '@' + index,
       'D=D+A'
     ]);
@@ -162,13 +188,41 @@ CodeWriter.prototype._writeTempAddressToD =
   ]);
 };
 
-CodeWriter.prototype._writeAdd = function _writeAdd () {
+CodeWriter.prototype._writeBinaryOp = function _writeBinaryOp (op) {
   this._writePopStackToD();
   this._writeStashD(14);
   this._writePopStackToD();
   this._outStream.writeLines([
     '@14',
-    'D=D+M'
+    'D=D' + op + 'M'
+  ]);
+  this._writePushDToStack();
+};
+
+CodeWriter.prototype._writeUnaryOp = function _writeUnaryOp (op) {
+  this._writePopStackToD();
+  this._outStream.writeLine('D=' + op + 'D');
+  this._writePushDToStack();
+};
+
+CodeWriter.prototype._writeBooleanOp = function _writeBooleanOp (op) {
+  var labelNum = this._label++;
+  var trueLabel = 'TRUE' + labelNum;
+  var endLabel = 'END' + labelNum;
+  this._writePopStackToD();
+  this._writeStashD(14);
+  this._writePopStackToD();
+  this._outStream.writeLines([
+    '@14',
+    'D=D-M',
+    '@' + trueLabel,
+    'D;J' + op,
+    'D=0',
+    '@' + endLabel,
+    '0;JMP',
+    '(' + trueLabel + ')',
+    'D=-1',
+    '(' + endLabel + ')'
   ]);
   this._writePushDToStack();
 };
